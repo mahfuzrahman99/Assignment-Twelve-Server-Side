@@ -14,6 +14,7 @@ app.use(
       "http://localhost:5174",
       "http://localhost:5173",
       "https://assignment-twelve-c5a2f.web.app",
+      "https://assignment-twelve-mahfuz-b8.surge.sh",
     ],
     credentials: true,
   })
