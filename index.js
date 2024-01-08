@@ -140,7 +140,9 @@ async function run() {
       .db("MedicalCampDB")
       .collection("camp_details");
     const paymentCollection = client.db("MedicalCampDB").collection("payments");
-    const organizerReviewCollection = client.db("MedicalCampDB").collection("organizerReview");
+    const organizerReviewCollection = client
+      .db("MedicalCampDB")
+      .collection("organizerReview");
     const usersCollection = client.db("MedicalCampDB").collection("users");
     const feedbackCollection = client
       .db("MedicalCampDB")
@@ -149,16 +151,16 @@ async function run() {
       .db("MedicalCampDB")
       .collection("participantProfile");
 
-      const verifyAdmin = async (req, res, next) => {
-        const email = req.decoded.email;
-        const query = { email: email };
-        const user = await usersCollection.findOne(query);
-        const isAdmin = user?.role === "admin";
-        if (!isAdmin) {
-          return res.status(403).send({ message: "forbidden access" });
-        }
-        next();
-      };
+    const verifyAdmin = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email };
+      const user = await usersCollection.findOne(query);
+      const isAdmin = user?.role === "admin";
+      if (!isAdmin) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      next();
+    };
 
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // users related APIS
@@ -245,21 +247,17 @@ async function run() {
       res.send(result);
     });
     // patch method
-    app.patch(
-      "/users/admin/:id",
-      verifyToken,
-      async (req, res) => {
-        const id = req.params.id;
-        const query = { _id: new ObjectId(id) };
-        const patchDoc = {
-          $set: {
-            role: "admin",
-          },
-        };
-        const result = await usersCollection.updateOne(query, patchDoc);
-        res.send(result);
-      }
-    );
+    app.patch("/users/admin/:id", verifyToken, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const patchDoc = {
+        $set: {
+          role: "admin",
+        },
+      };
+      const result = await usersCollection.updateOne(query, patchDoc);
+      res.send(result);
+    });
     app.patch("/users/organizer/:id", async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
@@ -268,7 +266,7 @@ async function run() {
       const updatedCamp = {
         $set: {
           // ORGANIZER INFORMATION
-          role:"Organizer",
+          role: "Organizer",
           name: updatedInfo.name,
           photo: updatedInfo.photo,
           phoneNumber: updatedInfo.phoneNumber,
@@ -300,7 +298,7 @@ async function run() {
       const updatedCamp = {
         $set: {
           // ORGANIZER INFORMATION
-          role:"Participant",
+          role: "Participant",
           photo: updatedInfo.photo,
           phoneNumber: updatedInfo.phoneNumber,
           address: updatedInfo.address,
@@ -332,7 +330,7 @@ async function run() {
       const updatedCamp = {
         $set: {
           // ORGANIZER INFORMATION
-          role:"Professionals",
+          role: "Professionals",
           photo: updatedInfo.photo,
           phoneNumber: updatedInfo.phoneNumber,
           address: updatedInfo.address,
@@ -543,6 +541,21 @@ async function run() {
       const result = await participantsCollection.deleteOne(query);
       res.send(result);
     });
+    app.put("/participants/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updatedInfo = req.body;
+      console.log(id, updatedInfo);
+      const updatedConfirmationStatus = {
+        $set: updatedInfo,
+      };
+      const result = await participantsCollection.updateOne(
+        filter,
+        updatedConfirmationStatus,
+        {upsert: true},
+      );
+      res.send(result);
+    });
     // patch request for canceling participants
     // app.patch("/participants/:id", async (req, res) => {
     //   const id = req.params.id;
@@ -556,37 +569,37 @@ async function run() {
     //   res.send(result);
     // });
     // patch request for updating confirmation status
-    app.patch("/participants/:id", async (req, res) => {
-      const id = req.params.id;
-      const { confirmationStatus } = req.body;
-      const query = { _id: new ObjectId(id) };
-      const updateFields = {
-        confirmationStatus: confirmationStatus || "Confirmed",
-        paymentStatus: paymentStatus || "paid",
-      };
+    // app.patch("/participants/:id", async (req, res) => {
+    //   const id = req.params.id;
+    //   const { confirmationStatus } = req.body;
+    //   const query = { _id: new ObjectId(id) };
+    //   const updateFields = {
+    //     confirmationStatus: confirmationStatus || "confirmed",
+    //     paymentStatus: paymentStatus || "paid",
+    //   };
 
-      try {
-        const result = await participantsCollection.updateOne(query, {
-          $set: updateFields,
-        });
+    //   try {
+    //     const result = await participantsCollection.updateOne(query, {
+    //       $set: updateFields,
+    //     });
 
-        if (result.modifiedCount === 1) {
-          res.send({
-            success: true,
-            message: "Confirmation status updated successfully.",
-          });
-        } else {
-          res
-            .status(404)
-            .send({ success: false, message: "Participant not found." });
-        }
-      } catch (error) {
-        console.error("Error updating confirmation status:", error);
-        res
-          .status(500)
-          .send({ success: false, message: "Internal server error." });
-      }
-    });
+    //     if (result.modifiedCount === 1) {
+    //       res.send({
+    //         success: true,
+    //         message: "Confirmation status updated successfully.",
+    //       });
+    //     } else {
+    //       res
+    //         .status(404)
+    //         .send({ success: false, message: "Participant not found." });
+    //     }
+    //   } catch (error) {
+    //     console.error("Error updating confirmation status:", error);
+    //     res
+    //       .status(500)
+    //       .send({ success: false, message: "Internal server error." });
+    //   }
+    // });
 
     // POST AND GET METHOD FOR ORGANIZER MANAGEMENT
     // post method
