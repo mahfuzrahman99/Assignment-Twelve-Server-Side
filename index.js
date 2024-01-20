@@ -20,41 +20,6 @@ app.use(
   })
 );
 
-// app.use(cors())
-
-// const corsConfig = {
-//   origin: [
-//     "http://localhost:5173",
-//     "http://localhost:5173",
-//     "https://assignment-twelve-c5a2f.web.app",
-//   ],
-//   credentials: true,
-//   methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-// };
-// app.use(cors(corsConfig));
-
-// app.use((req, res, next) => {
-//   // CORS headers
-//   res.header(
-//     "Access-Control-Allow-Origin",
-//     "http://localhost:5173",
-//     "http://localhost:5173",
-//     "https://assignment-twelve-c5a2f.web.app"
-//   ); // restrict it to the required domain
-//   res.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS");
-//   // Set custom headers for CORS
-//   res.header(
-//     "Access-Control-Allow-Headers",
-//     "Content-type,Accept,X-Custom-Header"
-//   );
-
-//   if (req.method === "OPTIONS") {
-//     return res.status(200).end();
-//   }
-
-//   return next();
-// });
-
 app.use(cookieParser());
 app.use(express.json());
 
@@ -224,35 +189,36 @@ async function run() {
       // Send the determined dashboard route as a response
       res.send({ dashboardRoute });
     });
-    // get method for admin
-    app.get("/users/admin/:email", verifyToken, async (req, res) => {
-      const email = req.params.email;
-      if (email !== req.decoded.email) {
-        return res.status(403).send({ message: "forbidden access" });
-      }
+    // // get method for admin
+    // app.get("/users/admin/:email", verifyToken, async (req, res) => {
+    //   const email = req.params.email;
+    //   if (email !== req.decoded.email) {
+    //     return res.status(403).send({ message: "forbidden access" });
+    //   }
 
-      const query = { email: email };
-      const user = await usersCollection.findOne(query);
-      let admin = false;
-      if (user) {
-        admin = user?.role === "admin";
-      }
-      res.send({ admin });
-    });
+    //   const query = { email: email };
+    //   const user = await usersCollection.findOne(query);
+    //   let admin = false;
+    //   if (user) {
+    //     admin = user?.role === "admin";
+    //   }
+    //   res.send({ admin });
+    // });
     // delete method
-    app.delete("/users/:id", verifyToken, async (req, res) => {
+    app.delete("/users/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await usersCollection.deleteOne(query);
       res.send(result);
     });
     // patch method
-    app.patch("/users/admin/:id", verifyToken, async (req, res) => {
+    app.patch("/users/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
+      const updatedInfo = req.body;
       const patchDoc = {
         $set: {
-          role: "admin",
+          role:updatedInfo.role,
         },
       };
       const result = await usersCollection.updateOne(query, patchDoc);
@@ -541,43 +507,23 @@ async function run() {
       const result = await participantsCollection.deleteOne(query);
       res.send(result);
     });
-    // app.put("/participants/:id", async (req, res) => {
-    //   const id = req.params.id;
-    //   const filter = { _id: new ObjectId(id) };
-    //   const updatedInfo = req.body;
-    //   console.log(id, updatedInfo);
-    //   const updatedConfirmationStatus = {
-    //     $set: updatedInfo,
-    //   };
-    //   const result = await participantsCollection.updateOne(
-    //     filter,
-    //     updatedConfirmationStatus,
-    //     {upsert: true},
-    //   );
-    //   res.send(result);
-    // });
     app.patch("/participants/:id", async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const updatedInfo = req.body;
       const updatedCamp = {
         $set: {
-          camp_name: updatedInfo.camp_name,
-          camp_fees: updatedInfo.camp_fees,
-          scheduled_date_time: updatedInfo.scheduled_date_time,
-          venue: updatedInfo.venue,
-          specialized_Services: updatedInfo.specialized_Services,
-          healthcare_Professionals: updatedInfo.healthcare_Professionals,
-          target_audience: updatedInfo.target_audience,
-          description: updatedInfo.description,
-          image: updatedInfo.image,
-          participants: updatedInfo.participants,
-          paymentStatus: updatedInfo.paymentStatus,
           confirmationStatus: updatedInfo.confirmationStatus,
-          campId: updatedInfo.campId,
         },
       };
-      const result = await participantsCollection.updateOne(filter, updatedCamp);
+      await paymentCollection.updateOne(
+        { transactionId: updatedInfo.transactionId },
+        updatedCamp
+      );
+      const result = await participantsCollection.updateOne(
+        filter,
+        updatedCamp
+      );
       res.send(result);
     });
 
@@ -715,7 +661,7 @@ async function run() {
       if (email) {
         query = { email: email };
       }
-      
+
       try {
         const result = await paymentCollection.find(query).toArray();
         res.send(result);
@@ -731,7 +677,6 @@ async function run() {
         const query = { _id: new ObjectId(id) };
         const result = await paymentCollection.findOne(query);
         if (!result) {
-          // If no document is found with the given id
           res.status(404).send("Payment not found");
           return;
         }
@@ -745,9 +690,13 @@ async function run() {
 
     app.post("/payments", async (req, res) => {
       const payment = req.body;
-      participantsCollection.updateOne({
-        _id: new ObjectId(payment.participantId)
-      }, {$set: {paymentStatus: "paid"}})
+      participantsCollection.updateOne(
+        { _id: new ObjectId(payment.participantId) },
+        {
+          $set: { paymentStatus: "paid", transactionId: payment.transactionId },
+        },
+        { upsert: true }
+      );
       const result = await paymentCollection.insertOne(payment);
       res.send(result);
     });
@@ -772,7 +721,6 @@ async function run() {
       const result = await paymentCollection.updateOne(filter, updatedPayment);
       res.send(result);
     });
-
 
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
