@@ -532,8 +532,8 @@ async function run() {
     // get all method
     app.get("/participants", async (req, res) => {
       const result = await participantsCollection.find().toArray();
-      const filteredData = result.filter((entry) => entry.participants > 0);
-      res.send(filteredData);
+      // const filteredData = result.filter((entry) => entry.participants > 0);
+      res.send(result);
     });
     app.delete("/participants/:id", async (req, res) => {
       const id = req.params.id;
@@ -745,7 +745,9 @@ async function run() {
 
     app.post("/payments", async (req, res) => {
       const payment = req.body;
-      // console.log("console from here", payment);
+      participantsCollection.updateOne({
+        _id: new ObjectId(payment.participantId)
+      }, {$set: {paymentStatus: "paid"}})
       const result = await paymentCollection.insertOne(payment);
       res.send(result);
     });
