@@ -541,65 +541,45 @@ async function run() {
       const result = await participantsCollection.deleteOne(query);
       res.send(result);
     });
-    app.put("/participants/:id", async (req, res) => {
+    // app.put("/participants/:id", async (req, res) => {
+    //   const id = req.params.id;
+    //   const filter = { _id: new ObjectId(id) };
+    //   const updatedInfo = req.body;
+    //   console.log(id, updatedInfo);
+    //   const updatedConfirmationStatus = {
+    //     $set: updatedInfo,
+    //   };
+    //   const result = await participantsCollection.updateOne(
+    //     filter,
+    //     updatedConfirmationStatus,
+    //     {upsert: true},
+    //   );
+    //   res.send(result);
+    // });
+    app.patch("/participants/:id", async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const updatedInfo = req.body;
-      console.log(id, updatedInfo);
-      const updatedConfirmationStatus = {
-        $set: updatedInfo,
+      const updatedCamp = {
+        $set: {
+          camp_name: updatedInfo.camp_name,
+          camp_fees: updatedInfo.camp_fees,
+          scheduled_date_time: updatedInfo.scheduled_date_time,
+          venue: updatedInfo.venue,
+          specialized_Services: updatedInfo.specialized_Services,
+          healthcare_Professionals: updatedInfo.healthcare_Professionals,
+          target_audience: updatedInfo.target_audience,
+          description: updatedInfo.description,
+          image: updatedInfo.image,
+          participants: updatedInfo.participants,
+          paymentStatus: updatedInfo.paymentStatus,
+          confirmationStatus: updatedInfo.confirmationStatus,
+          campId: updatedInfo.campId,
+        },
       };
-      const result = await participantsCollection.updateOne(
-        filter,
-        updatedConfirmationStatus,
-        {upsert: true},
-      );
+      const result = await participantsCollection.updateOne(filter, updatedCamp);
       res.send(result);
     });
-    // patch request for canceling participants
-    // app.patch("/participants/:id", async (req, res) => {
-    //   const id = req.params.id;
-    //   const query = { _id: new ObjectId(id) };
-    //   const updateFields = {
-    //     paymentStatus: "paid",
-    //   };
-    //   const result = await participantsCollection.updateOne(query, {
-    //     $set: updateFields,
-    //   });
-    //   res.send(result);
-    // });
-    // patch request for updating confirmation status
-    // app.patch("/participants/:id", async (req, res) => {
-    //   const id = req.params.id;
-    //   const { confirmationStatus } = req.body;
-    //   const query = { _id: new ObjectId(id) };
-    //   const updateFields = {
-    //     confirmationStatus: confirmationStatus || "confirmed",
-    //     paymentStatus: paymentStatus || "paid",
-    //   };
-
-    //   try {
-    //     const result = await participantsCollection.updateOne(query, {
-    //       $set: updateFields,
-    //     });
-
-    //     if (result.modifiedCount === 1) {
-    //       res.send({
-    //         success: true,
-    //         message: "Confirmation status updated successfully.",
-    //       });
-    //     } else {
-    //       res
-    //         .status(404)
-    //         .send({ success: false, message: "Participant not found." });
-    //     }
-    //   } catch (error) {
-    //     console.error("Error updating confirmation status:", error);
-    //     res
-    //       .status(500)
-    //       .send({ success: false, message: "Internal server error." });
-    //   }
-    // });
 
     // POST AND GET METHOD FOR ORGANIZER MANAGEMENT
     // post method
@@ -715,7 +695,7 @@ async function run() {
           amount: amount,
           currency: "usd",
           payment_method_types: ["card"],
-          status: "Pending",
+          // status: "Pending",
         };
         await paymentCollection.insertOne(paymentDetails);
         res.send({
@@ -735,7 +715,7 @@ async function run() {
       if (email) {
         query = { email: email };
       }
-      console.log(email);
+      
       try {
         const result = await paymentCollection.find(query).toArray();
         res.send(result);
@@ -765,10 +745,32 @@ async function run() {
 
     app.post("/payments", async (req, res) => {
       const payment = req.body;
-      console.log("console from here", payment);
+      // console.log("console from here", payment);
       const result = await paymentCollection.insertOne(payment);
       res.send(result);
     });
+    app.patch("/payments/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updatedInfo = req.body;
+      const updatedPayment = {
+        $set: {
+          Status: updatedInfo.Status,
+          transactionId: updatedInfo.transactionId,
+          date: updatedInfo.date,
+          email: updatedInfo.email,
+          camp_name: updatedInfo.camp_name,
+          camp_fees: updatedInfo.camp_fees,
+          confirmationStatus: updatedInfo.confirmationStatus,
+          paymentStatus: updatedInfo.paymentStatus,
+          venue: updatedInfo.venue,
+          campId: updatedInfo.campId,
+        },
+      };
+      const result = await paymentCollection.updateOne(filter, updatedPayment);
+      res.send(result);
+    });
+
 
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
