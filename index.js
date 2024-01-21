@@ -5,6 +5,7 @@ const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const morgan = require("morgan");
 const app = express();
 const port = process.env.PORT || 7000;
 
@@ -19,7 +20,7 @@ app.use(
     credentials: true,
   })
 );
-
+app.use(morgan("dev"));
 app.use(cookieParser());
 app.use(express.json());
 
@@ -159,36 +160,36 @@ async function run() {
     });
 
     // Example route for role-based dashboard
-    app.post("/dashboard", async (req, res) => {
-      const userEmail = req.body.email; // Assuming you send the user's email in the request body
-      const user = await usersCollection.findOne({ role: userEmail });
+    // app.post("/dashboard", async (req, res) => {
+    //   const userEmail = req.body.email; // Assuming you send the user's email in the request body
+    //   const user = await usersCollection.findOne({ role: userEmail });
 
-      // Check if the user exists
-      if (!user) {
-        return res.send({ message: "User not found" });
-      }
+    //   // Check if the user exists
+    //   if (!user) {
+    //     return res.send({ message: "User not found" });
+    //   }
 
-      // Set a default route
-      let dashboardRoute = "/default_dashboard";
+    //   // Set a default route
+    //   let dashboardRoute = "/default_dashboard";
 
-      // Determine the dashboard route based on the user's role
-      switch (user.role) {
-        case "Organizer":
-          dashboardRoute = "/organizer";
-          break;
-        case "Participant":
-          dashboardRoute = "/participant";
-          break;
-        case "Professional":
-          dashboardRoute = "/professional";
-          break;
-        // Add more cases for other roles if needed
-        default:
-          break;
-      }
-      // Send the determined dashboard route as a response
-      res.send({ dashboardRoute });
-    });
+    //   // Determine the dashboard route based on the user's role
+    //   switch (user.role) {
+    //     case "Organizer":
+    //       dashboardRoute = "/organizer";
+    //       break;
+    //     case "Participant":
+    //       dashboardRoute = "/participant";
+    //       break;
+    //     case "Professional":
+    //       dashboardRoute = "/professional";
+    //       break;
+    //     // Add more cases for other roles if needed
+    //     default:
+    //       break;
+    //   }
+    //   // Send the determined dashboard route as a response
+    //   res.send({ dashboardRoute });
+    // });
     // // get method for admin
     // app.get("/users/admin/:email", verifyToken, async (req, res) => {
     //   const email = req.params.email;
@@ -216,6 +217,7 @@ async function run() {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const updatedInfo = req.body;
+      console.log(updatedInfo);
       const patchDoc = {
         $set: {
           role:updatedInfo.role,
@@ -507,6 +509,19 @@ async function run() {
       const result = await participantsCollection.deleteOne(query);
       res.send(result);
     });
+    app.put('/participants/incrementParticipants/:id', async (req, res) => {
+      try {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const doc = {$set: req.body}
+        const result = await participantsCollection.updateOne( query, doc, {upsert:true});
+        const result2 = await campusCollection.updateOne( query, doc, {upsert:true});
+        console.log(result2);
+        res.send(result);
+      } catch (error) {
+        res.send(error);
+      }
+    })
     app.patch("/participants/:id", async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
