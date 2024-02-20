@@ -149,6 +149,17 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/getUserRole/:email", async (req, res) => {
+      try {
+        const email = req.params.email;
+        const query = { email: email };
+        const user = await usersCollection.findOne(query);
+        res.send(user.role);
+      } catch (error) {
+        res.send(error)
+      }
+    })
+
     // get method
     app.get("/users", async (req, res) => {
       const result = await usersCollection.find().toArray();
