@@ -116,6 +116,9 @@ async function run() {
     const participantProfileCollection = client
       .db("MedicalCampDB")
       .collection("participantProfile");
+    const upcomingRegisteredListCollection = client
+      .db("MedicalCampDB")
+      .collection("upcomingRegisteredList");
 
     const verifyAdmin = async (req, res, next) => {
       const email = req.decoded.email;
@@ -159,52 +162,6 @@ async function run() {
       res.send(user);
     });
 
-    // Example route for role-based dashboard
-    // app.post("/dashboard", async (req, res) => {
-    //   const userEmail = req.body.email; // Assuming you send the user's email in the request body
-    //   const user = await usersCollection.findOne({ role: userEmail });
-
-    //   // Check if the user exists
-    //   if (!user) {
-    //     return res.send({ message: "User not found" });
-    //   }
-
-    //   // Set a default route
-    //   let dashboardRoute = "/default_dashboard";
-
-    //   // Determine the dashboard route based on the user's role
-    //   switch (user.role) {
-    //     case "Organizer":
-    //       dashboardRoute = "/organizer";
-    //       break;
-    //     case "Participant":
-    //       dashboardRoute = "/participant";
-    //       break;
-    //     case "Professional":
-    //       dashboardRoute = "/professional";
-    //       break;
-    //     // Add more cases for other roles if needed
-    //     default:
-    //       break;
-    //   }
-    //   // Send the determined dashboard route as a response
-    //   res.send({ dashboardRoute });
-    // });
-    // // get method for admin
-    // app.get("/users/admin/:email", verifyToken, async (req, res) => {
-    //   const email = req.params.email;
-    //   if (email !== req.decoded.email) {
-    //     return res.status(403).send({ message: "forbidden access" });
-    //   }
-
-    //   const query = { email: email };
-    //   const user = await usersCollection.findOne(query);
-    //   let admin = false;
-    //   if (user) {
-    //     admin = user?.role === "admin";
-    //   }
-    //   res.send({ admin });
-    // });
     // delete method
     app.delete("/users/:id", async (req, res) => {
       const id = req.params.id;
@@ -441,6 +398,69 @@ async function run() {
       const result = await upcomingCollection.updateOne(filter, updatedCamp);
       res.send(result);
     });
+    // update using put professional
+    app.put("/upcomingPut/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const updateCount = req.body;
+        const updatedCount = {
+          $set: {
+            interested: updateCount.interested,
+          },
+        }
+        const result = await upcomingCollection.updateOne(query, updatedCount)
+        res.send(result);
+      } catch (error) {
+        res.send(error)
+      }
+    })
+    // update using put participant
+    app.put("/upcomingPutParticipant/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const updateCount = req.body;
+        const updatedCount = {
+          $set: {
+            participants: updateCount.participants,
+          },
+        }
+        const result = await upcomingCollection.updateOne(query, updatedCount)
+        res.send(result);
+      } catch (error) {
+        res.send(error)
+      }
+    })
+    // update using put professional status
+    app.put("/upcomingPutStatus/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const updateCount = req.body;
+        const updatedCount = {
+          $set: {
+            professionalStatus: updateCount.professionalStatus,
+          },
+        }
+        const result = await upcomingCollection.updateOne(query, updatedCount)
+        res.send(result);
+      } catch (error) {
+        res.send(error)
+      }
+    })
+
+    // Upcoming Registered List collection
+    // post method
+    app.post("/upcomingRegisteredList", async (req, res) => {
+      try {
+        const data = req.body;
+        const result = await upcomingRegisteredListCollection.insertOne(data);
+        res.send(result);
+      } catch (error) {
+        res.send(error)
+      }
+    })
 
     // POST AND GET METHOD FOR FEEDBACK POST
     // post method
@@ -600,9 +620,9 @@ async function run() {
 
     // Delete request for canceling a organizer management
     app.delete("/ORManganate/:id", async (req, res) => {
-      const id = req.params.id;
-      const query = { _id: new ObjectId(id) };
       try {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
         const result = await ORManganateCollection.deleteOne(query);
         if (result.deletedCount === 1) {
           res.send({
